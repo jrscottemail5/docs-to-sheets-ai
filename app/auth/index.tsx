@@ -6,31 +6,54 @@ import { useEffect, useState } from "react";
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useGoogleAuth();
+  const { user, isAuthenticated, loading, signIn, error } = useGoogleAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const { signIn } = useGoogleAuth();
+  const [navigationError, setNavigationError] = useState<string | null>(null);
 
+  // Navigate to home when authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      router.replace("/(tabs)");
+      console.log("[AuthScreen] User authenticated, navigating to home");
+      // Add a small delay to ensure state is fully committed
+      const timer = setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, router]);
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setNavigationError(null);
     try {
-      await signIn();
-    } catch (error) {
-      console.error("Login failed:", error);
+      console.log("[AuthScreen] Starting sign-in...");
+      const result = await signIn();
+      console.log("[AuthScreen] Sign-in successful:", result?.email);
+      // Don't set isLoggingIn to false here - let the useEffect handle navigation
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Sign-in failed";
+      console.error("[AuthScreen] Login failed:", errorMsg);
+      setNavigationError(errorMsg);
       setIsLoggingIn(false);
     }
   };
 
-  if (loading || isLoggingIn) {
+  // Show loading state during initial auth check
+  if (loading && !isLoggingIn) {
     return (
       <ScreenContainer className="flex items-center justify-center">
         <ActivityIndicator size="large" />
-        <Text className="mt-4 text-muted">Authenticating...</Text>
+        <Text className="mt-4 text-muted">Checking authentication...</Text>
+      </ScreenContainer>
+    );
+  }
+
+  // Show loading state during sign-in
+  if (isLoggingIn) {
+    return (
+      <ScreenContainer className="flex items-center justify-center">
+        <ActivityIndicator size="large" />
+        <Text className="mt-4 text-muted">Signing in with Google...</Text>
       </ScreenContainer>
     );
   }
@@ -51,6 +74,15 @@ export default function AuthScreen() {
               </Text>
             </View>
           </View>
+
+          {/* Error Message */}
+          {(navigationError || error) && (
+            <View className="bg-error bg-opacity-10 rounded-lg p-4 border border-error border-opacity-30">
+              <Text className="text-error font-semibold">
+                {navigationError || error?.message || "An error occurred"}
+              </Text>
+            </View>
+          )}
 
           {/* Info Cards */}
           <View className="gap-3 mb-8">

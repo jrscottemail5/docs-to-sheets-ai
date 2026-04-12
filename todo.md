@@ -43,3 +43,8 @@
 - [x] Set up Google Cloud project and OAuth credentials
 - [x] Configure Google Sign-In for Android
 - [ ] Test OAuth flow on Android device
+
+## Current Issues
+
+- [ ] Fix Google OAuth authentication loop - app keeps redirecting to sign-in after successful Google auth
+- [ ] Debug auth state persistence - user state not being properly maintained after sign-in
