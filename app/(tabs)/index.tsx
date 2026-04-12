@@ -1,8 +1,8 @@
-import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/hooks/use-auth";
+import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { ScreenContainer } from "@/components/screen-container";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 
 interface RecentConversion {
@@ -14,7 +14,7 @@ interface RecentConversion {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, signOut } = useGoogleAuth();
   const [recentConversions, setRecentConversions] = useState<RecentConversion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -123,12 +123,12 @@ export default function HomeScreen() {
               <Text className="font-semibold text-foreground text-center">Settings</Text>
             </TouchableOpacity>
             {isAuthenticated && (
-              <TouchableOpacity
-                onPress={logout}
-                className="bg-error bg-opacity-10 rounded-lg p-4 border border-error border-opacity-30 active:opacity-70"
-              >
-                <Text className="font-semibold text-error text-center">Logout</Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              onPress={signOut}
+              className="bg-error bg-opacity-10 rounded-lg p-4 border border-error border-opacity-30 active:opacity-70"
+            >
+              <Text className="font-semibold text-error text-center">Logout</Text>
+            </TouchableOpacity>
             )}
           </View>
         </View>

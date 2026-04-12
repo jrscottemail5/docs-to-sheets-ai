@@ -1,14 +1,14 @@
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/hooks/use-auth";
+import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { ScreenContainer } from "@/components/screen-container";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useGoogleAuth();
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
     router.replace("/(tabs)");
   };
 
@@ -34,14 +34,7 @@ export default function SettingsScreen() {
                 <Text className="text-xs text-muted font-semibold mb-1">Name</Text>
                 <Text className="text-base text-foreground">{user?.name || "Not set"}</Text>
               </View>
-              <View>
-                <Text className="text-xs text-muted font-semibold mb-1">Last Signed In</Text>
-                <Text className="text-base text-foreground">
-                  {user?.lastSignedIn
-                    ? new Date(user.lastSignedIn).toLocaleDateString()
-                    : "Never"}
-                </Text>
-              </View>
+
             </View>
           </View>
 

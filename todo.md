@@ -36,3 +36,10 @@
 
 - [ ] Final checkpoint before publish
 - [ ] Generate APK/IPA for distribution
+
+## Bugs & Issues
+
+- [x] Integrate Google OAuth directly (replace Manus Space OAuth)
+- [x] Set up Google Cloud project and OAuth credentials
+- [x] Configure Google Sign-In for Android
+- [ ] Test OAuth flow on Android device

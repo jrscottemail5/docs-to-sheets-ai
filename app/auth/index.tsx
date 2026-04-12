@@ -1,14 +1,14 @@
 import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/hooks/use-auth";
+import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { ScreenContainer } from "@/components/screen-container";
 import { useEffect, useState } from "react";
-import { startOAuthLogin } from "@/constants/oauth";
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading } = useGoogleAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { signIn } = useGoogleAuth();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -19,7 +19,7 @@ export default function AuthScreen() {
   const handleLogin = async () => {
     setIsLoggingIn(true);
     try {
-      await startOAuthLogin();
+      await signIn();
     } catch (error) {
       console.error("Login failed:", error);
       setIsLoggingIn(false);
