@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, loading, signIn, error } = useGoogleAuth();
+  const { user, isAuthenticated, loading, signIn, error: authError } = useGoogleAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [navigationError, setNavigationError] = useState<string | null>(null);
 
@@ -14,6 +14,7 @@ export default function AuthScreen() {
   useEffect(() => {
     if (isAuthenticated && user) {
       console.log("[AuthScreen] User authenticated, navigating to home");
+      setNavigationError(null);
       // Add a small delay to ensure state is fully committed
       const timer = setTimeout(() => {
         router.replace("/(tabs)");
@@ -75,12 +76,10 @@ export default function AuthScreen() {
             </View>
           </View>
 
-          {/* Error Message */}
-          {(navigationError || error) && (
+          {/* Error Message - Only show if there's actual error text */}
+          {navigationError && (
             <View className="bg-error bg-opacity-10 rounded-lg p-4 border border-error border-opacity-30">
-              <Text className="text-error font-semibold">
-                {navigationError || error?.message || "An error occurred"}
-              </Text>
+              <Text className="text-error font-semibold">{navigationError}</Text>
             </View>
           )}
 
