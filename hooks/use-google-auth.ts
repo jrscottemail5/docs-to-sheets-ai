@@ -77,7 +77,8 @@ export function useGoogleAuth() {
       } catch (err) {
         const error = err instanceof Error ? err : new Error("Failed to initialize Google Sign-In");
         console.error("[GoogleAuth] Initialization error:", error);
-        setError(error);
+        // Don't set error state during initialization - these are expected in some cases
+        // User can still sign in, and errors will be caught during actual sign-in
         setIsInitialized(true);
       } finally {
         setLoading(false);
