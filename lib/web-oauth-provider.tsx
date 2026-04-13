@@ -3,8 +3,6 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import * as Crypto from "expo-crypto";
-import { Buffer } from "buffer";
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || "";
 const REDIRECT_SCHEME = "docs-to-sheets-ai";
@@ -51,16 +49,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Generate PKCE code challenge
-async function generatePKCE() {
-  const codeVerifier = await Crypto.getRandomBytes(32);
-  const base64Verifier = Buffer.from(codeVerifier).toString("base64url");
-  
-  // For simplicity, use the verifier as the challenge (not ideal but works)
-  // In production, you'd want to hash this properly
-  const codeChallenge = base64Verifier;
-  
-  return { codeVerifier: base64Verifier, codeChallenge };
+// Simple base64url encoding without external dependencies
+function base64urlEncode(str: string): string {
+  return Buffer.from(str)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
+// Generate random string for state parameter
+function generateRandomString(length: number = 32): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
 }
 
 export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
@@ -76,7 +81,10 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
         console.log("[WebOAuth] Initializing...");
 
         if (!GOOGLE_CLIENT_ID) {
-          throw new Error("Google Client ID not configured");
+          console.warn("[WebOAuth] Google Client ID not configured");
+          setIsInitialized(true);
+          setLoading(false);
+          return;
         }
 
         // Try to restore session from secure storage
@@ -99,8 +107,7 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
         setIsInitialized(true);
         setLoading(false);
       } catch (err) {
-        const error = err instanceof Error ? err : new Error("Failed to initialize auth");
-        console.error("[WebOAuth] Initialization error:", error);
+        console.error("[WebOAuth] Initialization error:", err);
         setIsInitialized(true);
         setLoading(false);
       }
@@ -113,17 +120,6 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleDeepLink = ({ url }: { url: string }) => {
       console.log("[WebOAuth] Deep link received:", url);
-
-      if (url.includes("oauth-callback")) {
-        const params = new URL(url).searchParams;
-        const code = params.get("code");
-        const state = params.get("state");
-
-        if (code) {
-          console.log("[WebOAuth] Authorization code received");
-          // The code will be exchanged in the signIn function
-        }
-      }
     };
 
     const subscription = Linking.addEventListener("url", handleDeepLink);
@@ -135,14 +131,13 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[WebOAuth] Starting sign-in...");
       setError(null);
 
-      const { codeVerifier, codeChallenge } = await generatePKCE();
-      const state = await Crypto.getRandomBytes(16);
-      const stateString = Buffer.from(state).toString("base64url");
+      const state = generateRandomString(32);
+      const codeVerifier = generateRandomString(128);
 
-      // Store PKCE verifier for later exchange
+      // Store state and verifier for verification
       if (Platform.OS !== "web") {
+        await SecureStore.setItemAsync("oauth_state", state);
         await SecureStore.setItemAsync("pkce_verifier", codeVerifier);
-        await SecureStore.setItemAsync("oauth_state", stateString);
       }
 
       const authUrl = new URL(GOOGLE_AUTH_URL);
@@ -150,13 +145,12 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
       authUrl.searchParams.append("redirect_uri", REDIRECT_URI);
       authUrl.searchParams.append("response_type", "code");
       authUrl.searchParams.append("scope", SCOPES.join(" "));
-      authUrl.searchParams.append("state", stateString);
-      authUrl.searchParams.append("code_challenge", codeChallenge);
-      authUrl.searchParams.append("code_challenge_method", "S256");
+      authUrl.searchParams.append("state", state);
       authUrl.searchParams.append("access_type", "offline");
       authUrl.searchParams.append("prompt", "consent");
 
       console.log("[WebOAuth] Opening browser for authentication...");
+      console.log("[WebOAuth] Auth URL:", authUrl.toString().substring(0, 100) + "...");
 
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl.toString(),
@@ -166,10 +160,10 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
         }
       );
 
-      console.log("[WebOAuth] Browser result:", result.type);
+      console.log("[WebOAuth] Browser result type:", result.type);
 
       if (result.type === "cancel") {
-        throw new Error("Sign-in cancelled");
+        throw new Error("Sign-in cancelled by user");
       }
 
       if (result.type === "dismiss") {
@@ -201,10 +195,6 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
       console.log("[WebOAuth] Authorization code received, exchanging for tokens...");
 
       // Exchange code for tokens
-      const pkceVerifier = Platform.OS !== "web"
-        ? await SecureStore.getItemAsync("pkce_verifier")
-        : "";
-
       const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
         method: "POST",
         headers: {
@@ -215,7 +205,6 @@ export function WebOAuthProvider({ children }: { children: React.ReactNode }) {
           code,
           redirect_uri: REDIRECT_URI,
           grant_type: "authorization_code",
-          code_verifier: pkceVerifier || "",
         }).toString(),
       });
 
