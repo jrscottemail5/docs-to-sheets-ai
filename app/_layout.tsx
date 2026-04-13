@@ -18,7 +18,7 @@ import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
-import { useAuth, AuthProvider } from "@/lib/auth-provider";
+import { useWebOAuth, WebOAuthProvider } from "@/lib/web-oauth-provider";
 import { useRouter } from "expo-router";
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -29,7 +29,7 @@ export const unstable_settings = {
 };
 
 function RootLayoutContent() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useWebOAuth();
   const router = useRouter();
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
@@ -136,8 +136,8 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
+    <WebOAuthProvider>
       <RootLayoutContent />
-    </AuthProvider>
+    </WebOAuthProvider>
   );
 }

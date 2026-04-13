@@ -1,11 +1,11 @@
 import { ScrollView, Text, View, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/lib/auth-provider";
+import { useWebOAuth } from "@/lib/web-oauth-provider";
 import { ScreenContainer } from "@/components/screen-container";
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useWebOAuth();
 
   const handleLogout = async () => {
     await signOut();

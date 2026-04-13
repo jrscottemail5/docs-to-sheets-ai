@@ -1,6 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/lib/auth-provider";
+import { useWebOAuth } from "@/lib/web-oauth-provider";
 import { ScreenContainer } from "@/components/screen-container";
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
@@ -14,7 +14,7 @@ interface RecentConversion {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, isAuthenticated, signOut } = useWebOAuth();
   const [recentConversions, setRecentConversions] = useState<RecentConversion[]>([]);
   const [loading, setLoading] = useState(true);
 

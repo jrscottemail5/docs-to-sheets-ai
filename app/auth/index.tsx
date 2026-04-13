@@ -1,10 +1,10 @@
 import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useAuth } from "@/lib/auth-provider";
+import { useWebOAuth } from "@/lib/web-oauth-provider";
 import { ScreenContainer } from "@/components/screen-container";
 import { useEffect, useState } from "react";
 
 export default function AuthScreen() {
-  const { user, isAuthenticated, loading, signIn, error: authError } = useAuth();
+  const { user, isAuthenticated, loading, signIn, error: authError } = useWebOAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [navigationError, setNavigationError] = useState<string | null>(null);
 
