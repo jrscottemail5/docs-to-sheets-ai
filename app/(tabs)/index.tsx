@@ -36,11 +36,8 @@ export default function HomeScreen() {
   };
 
   const handleNewConversion = () => {
-    if (!isAuthenticated) {
-      router.push("/auth");
-    } else {
-      router.push("/document-selection");
-    }
+    // User is always authenticated when they reach this screen (handled at root level)
+    router.push("/document-selection");
   };
 
   const handleRecentConversion = (conversion: RecentConversion) => {
@@ -51,7 +48,7 @@ export default function HomeScreen() {
     });
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <ScreenContainer className="flex items-center justify-center">
         <ActivityIndicator size="large" />
@@ -122,14 +119,12 @@ export default function HomeScreen() {
             >
               <Text className="font-semibold text-foreground text-center">Settings</Text>
             </TouchableOpacity>
-            {isAuthenticated && (
             <TouchableOpacity
               onPress={signOut}
               className="bg-error bg-opacity-10 rounded-lg p-4 border border-error border-opacity-30 active:opacity-70"
             >
               <Text className="font-semibold text-error text-center">Logout</Text>
             </TouchableOpacity>
-            )}
           </View>
         </View>
       </ScrollView>

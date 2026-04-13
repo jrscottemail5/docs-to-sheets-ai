@@ -1,27 +1,20 @@
 import { ScrollView, Text, View, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
 import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { ScreenContainer } from "@/components/screen-container";
 import { useEffect, useState } from "react";
 
 export default function AuthScreen() {
-  const router = useRouter();
   const { user, isAuthenticated, loading, signIn, error: authError } = useGoogleAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [navigationError, setNavigationError] = useState<string | null>(null);
 
-  // Navigate to home when authenticated
+  // Navigate to home when authenticated (handled by root layout)
   useEffect(() => {
     if (isAuthenticated && user) {
-      console.log("[AuthScreen] User authenticated, navigating to home");
+      console.log("[AuthScreen] User authenticated, root layout will handle navigation");
       setNavigationError(null);
-      // Add a small delay to ensure state is fully committed
-      const timer = setTimeout(() => {
-        router.replace("/(tabs)");
-      }, 500);
-      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user]);
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
@@ -30,7 +23,8 @@ export default function AuthScreen() {
       console.log("[AuthScreen] Starting sign-in...");
       const result = await signIn();
       console.log("[AuthScreen] Sign-in successful:", result?.email);
-      // Don't set isLoggingIn to false here - let the useEffect handle navigation
+      // Root layout will automatically navigate to home when isAuthenticated becomes true
+      setIsLoggingIn(false);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Sign-in failed";
       console.error("[AuthScreen] Login failed:", errorMsg);
@@ -40,11 +34,11 @@ export default function AuthScreen() {
   };
 
   // Show loading state during initial auth check
-  if (loading && !isLoggingIn) {
+  if (loading) {
     return (
       <ScreenContainer className="flex items-center justify-center">
         <ActivityIndicator size="large" />
-        <Text className="mt-4 text-muted">Checking authentication...</Text>
+        <Text className="mt-4 text-muted">Initializing...</Text>
       </ScreenContainer>
     );
   }
