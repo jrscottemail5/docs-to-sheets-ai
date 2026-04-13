@@ -1,6 +1,6 @@
 import { ScrollView, Text, View, TouchableOpacity, FlatList, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { useGoogleAuth } from "@/hooks/use-google-auth";
+import { useAuth } from "@/lib/auth-provider";
 import { ScreenContainer } from "@/components/screen-container";
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
@@ -14,7 +14,7 @@ interface RecentConversion {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user, isAuthenticated, loading: authLoading, signOut } = useGoogleAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
   const [recentConversions, setRecentConversions] = useState<RecentConversion[]>([]);
   const [loading, setLoading] = useState(true);
 
