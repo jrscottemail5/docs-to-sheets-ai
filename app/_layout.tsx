@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { Platform } from "react-native";
+import { Platform, View, Text } from "react-native";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import {
@@ -29,28 +29,44 @@ export const unstable_settings = {
 };
 
 function RootLayoutContent() {
-  const { isAuthenticated, loading: authLoading } = useWebOAuth();
+  const { isAuthenticated, loading: authLoading, isInitialized } = useWebOAuth();
   const router = useRouter();
   const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
   const [frame, setFrame] = useState<Rect>(initialFrame);
+  const [initError, setInitError] = useState<string | null>(null);
 
   // Handle authentication routing
   useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        router.replace("/auth");
-      } else {
-        router.replace("/(tabs)");
+    try {
+      console.log("[RootLayout] Auth state:", { isAuthenticated, authLoading, isInitialized });
+      
+      if (isInitialized && !authLoading) {
+        if (!isAuthenticated) {
+          console.log("[RootLayout] Routing to /auth");
+          router.replace("/auth");
+        } else {
+          console.log("[RootLayout] Routing to /(tabs)");
+          router.replace("/(tabs)");
+        }
       }
+    } catch (err) {
+      console.error("[RootLayout] Routing error:", err);
+      setInitError(err instanceof Error ? err.message : "Routing error");
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, isInitialized, router]);
 
   // Initialize Manus runtime for cookie injection from parent container
   useEffect(() => {
-    initManusRuntime();
+    try {
+      console.log("[RootLayout] Initializing Manus runtime");
+      initManusRuntime();
+    } catch (err) {
+      console.error("[RootLayout] Manus runtime init error:", err);
+      // Don't fail on this error, it's not critical
+    }
   }, []);
 
   const handleSafeAreaUpdate = useCallback((metrics: Metrics) => {
@@ -60,8 +76,12 @@ function RootLayoutContent() {
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
-    const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate);
-    return () => unsubscribe();
+    try {
+      const unsubscribe = subscribeSafeAreaInsets(handleSafeAreaUpdate);
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("[RootLayout] Safe area subscription error:", err);
+    }
   }, [handleSafeAreaUpdate]);
 
   // Create clients once and reuse them
@@ -78,7 +98,15 @@ function RootLayoutContent() {
         },
       }),
   );
-  const [trpcClient] = useState(() => createTRPCClient());
+  
+  const [trpcClient] = useState(() => {
+    try {
+      return createTRPCClient();
+    } catch (err) {
+      console.error("[RootLayout] TRPC client creation error:", err);
+      throw err;
+    }
+  });
 
   // Ensure minimum 8px padding for top and bottom on mobile
   const providerInitialMetrics = useMemo(() => {
@@ -92,6 +120,18 @@ function RootLayoutContent() {
       },
     };
   }, [initialInsets, initialFrame]);
+
+  // Show error screen if initialization failed
+  if (initError) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+        <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
+          Initialization Error
+        </Text>
+        <Text style={{ fontSize: 14, color: "#666" }}>{initError}</Text>
+      </View>
+    );
+  }
 
   const content = (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -135,9 +175,23 @@ function RootLayoutContent() {
 }
 
 export default function RootLayout() {
-  return (
-    <WebOAuthProvider>
-      <RootLayoutContent />
-    </WebOAuthProvider>
-  );
+  try {
+    return (
+      <WebOAuthProvider>
+        <RootLayoutContent />
+      </WebOAuthProvider>
+    );
+  } catch (err) {
+    console.error("[RootLayout] Fatal error:", err);
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+        <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
+          Fatal Error
+        </Text>
+        <Text style={{ fontSize: 14, color: "#666" }}>
+          {err instanceof Error ? err.message : "Unknown error"}
+        </Text>
+      </View>
+    );
+  }
 }
